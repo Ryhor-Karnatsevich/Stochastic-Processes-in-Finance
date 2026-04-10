@@ -1,14 +1,16 @@
 import yfinance as yf
-import pandas as pd
+from datetime import datetime, timedelta
 
+class Data:
+    def __init__(self, ticker):
+        self.ticker = ticker
+        self.start = datetime.now().date() - timedelta(days=1000)
+        self.data = None
 
+    def load(self):
+        self.data = yf.download(self.ticker, start=self.start)
+        return self.data
 
-# Get data from internet ?
-Updated_data = True
-if Updated_data:
-    data = yf.download("AAPL", start="2025-01-01")
-else:
-    data = pd.read_csv("../Data/Assets/AAPL.csv")
-
-
-print(data)
+    def get_returns(self):
+        returns = self.data["Close"].pct_change().dropna()
+        return returns

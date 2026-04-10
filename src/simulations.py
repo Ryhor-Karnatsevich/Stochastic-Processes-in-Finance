@@ -1,4 +1,3 @@
-import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -13,7 +12,7 @@ class Simulations:
 
     # Random Walk
     # St = S(t-1) + Et
-    def random_walk(self,walk_length = 1000):
+    def random_walk(self,walk_length = 504):
         results = []
         for number in range(self.iterations):
             start = [self.s]
@@ -30,7 +29,7 @@ class Simulations:
     # St = S(t-1) * e^(( μ - σ^2/2)*dt + σ*Wt*dt)
     # μ = mean annual return(the percentage drift) | σ = volatility
     # Wt is a Wiener process of Brownian Motion
-    def geometric_brownian_motion(self, walk_length = 500 , volatility = 0.2,mean_annual_return = 0.1):
+    def geometric_brownian_motion(self, walk_length = 504 , volatility = 0.2,mean_annual_return = 0.1):
         results = []
         for number in range(self.iterations):
             start = [self.s]
@@ -48,7 +47,7 @@ class Simulations:
     # μ is a constant called the (long-term) mean
     # St = S(t-1) + θ*(μ - S(t-1))*dt + σ*Wt*dt
 
-    def ornstein_uhlenbeck_process(self, walk_length = 10000 , volatility = 0.2,Long_term_mean = 110, theta = 0.02):
+    def ornstein_uhlenbeck_process(self, walk_length = 504 , volatility = 0.2,Long_term_mean = 110, theta = 0.02):
         results = []
         for number in range(self.iterations):
             start = [self.s]
@@ -59,7 +58,6 @@ class Simulations:
         return results
 
     def plot_one_path(self, process='gbm', **kwargs):
-        """Визуализирует один случайный путь"""
         if process == 'rw':
             paths = self.random_walk(**kwargs)
         elif process == 'gbm':
@@ -71,7 +69,7 @@ class Simulations:
 
         plt.figure(figsize=(12, 6))
         plt.plot(paths[0])
-        plt.title(f"{process.upper()} — один путь")
-        plt.xlabel("Шаг времени")
-        plt.ylabel("Цена")
+        plt.title(f"{process.upper()}")
+        plt.xlabel("time step")
+        plt.ylabel("price")
         plt.show()
