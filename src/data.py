@@ -2,6 +2,7 @@ import yfinance as yf
 import pandas as pd
 
 
+
 # Get data from internet ?
 Updated_data = True
 if Updated_data:
