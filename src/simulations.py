@@ -47,15 +47,29 @@ class Simulations:
     # μ is a constant called the (long-term) mean
     # St = S(t-1) + θ*(μ - S(t-1))*dt + σ*Wt*dt
     # θ = theta
-    def ornstein_uhlenbeck_process(self, walk_length = 504 , volatility = 0.2, long_term_mean = 110, theta = 0.2):
-        Wt = np.random.normal(0,1,(self.iterations, walk_length))
+    def ornstein_uhlenbeck_process(
+            self,
+            walk_length=504,
+            volatility=0.2,
+            long_term_mean=None,
+            theta=0.2
+    ):
 
-        # Starting matrix
-        zero_matrix = np.zeros((self.iterations, walk_length))
-        matrix = np.hstack([np.full((self.iterations, 1), self.s), zero_matrix])
+        if long_term_mean is None:
+            raise ValueError("long_term_mean must be provided (log-space mean)")
+
+        X = np.zeros((self.iterations, walk_length + 1))
+        X[:, 0] = np.log(self.s)
+
+        Wt = np.random.normal(0, 1, (self.iterations, walk_length))
+
+        mu = long_term_mean
 
         for t in range(1, walk_length + 1):
-            prev_S = matrix[:, t - 1]
-            matrix[:, t] = (prev_S + theta * (long_term_mean - prev_S) * self.dt + volatility * Wt[:, t - 1] * np.sqrt(self.dt))
+            X[:, t] = (
+                    X[:, t - 1]
+                    + theta * (mu - X[:, t - 1]) * self.dt
+                    + volatility * np.sqrt(self.dt) * Wt[:, t - 1]
+            )
 
-        return matrix
+        return np.exp(X)

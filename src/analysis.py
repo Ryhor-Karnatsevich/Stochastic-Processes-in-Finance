@@ -31,7 +31,12 @@ print(round(mean_annual_return,4), round(annual_volatility,4))
 long_term_mean = np.mean(df["Close"].values)
 np.random.seed(52)
 
-ou_vol = np.std(df["Close"].values)
+log_prices = np.log(df["Close"].values)
+long_term_mean = np.mean(log_prices)
+
+real_returns = np.log(df["Close"].values[1:] / df["Close"].values[:-1])
+ou_vol = np.std(real_returns)
+
 # ======================================================================================================================
 # Execution
 sim = Simulations(iterations=10, s=starting_price)
@@ -40,10 +45,14 @@ gbm = sim.geometric_brownian_motion(mean_annual_return = mean_annual_return, vol
 
 rw = sim.geometric_random_walk()
 
-ou = sim.ornstein_uhlenbeck_process(long_term_mean=long_term_mean, volatility = ou_vol)
+ou = sim.ornstein_uhlenbeck_process(
+    long_term_mean=long_term_mean,
+    volatility=ou_vol,
+    theta=0.2
+)
 
 # Data transformation
-real_returns = np.log(df["Close"].values[1:] / df["Close"].values[:-1])
+
 gbm_returns = np.log(gbm[:, 1:] / gbm[:, :-1])
 ou_returns = np.log(ou[:, 1:] / ou[:, :-1])
 rw_returns = np.log(rw[:, 1:] / rw[:, :-1])
@@ -58,38 +67,38 @@ stats = {
         "volatility": np.std(real_returns) * np.sqrt(252),
         "autocorr": autocorr(real_returns),
         "adf_pvalue": adf_pvalue(real_returns),
-        "skewness": skewness(real_returns),
-        "kurtosis": kurtosis(real_returns),
+        "skewness": skewness(real_returns.flatten()),
+        "kurtosis": kurtosis(real_returns.flatten()),
         "max_drawdown": max_drawdown(df["Close"].values)
     },
 
     "RW": {
-        "mean": np.mean(rw_returns.flatten()) * 252,
-        "volatility": np.std(rw_returns.flatten()) * np.sqrt(252),
+        "mean": np.mean(rw_returns) * 252,
+        "volatility": np.std(rw_returns) * np.sqrt(252),
         "autocorr": autocorr(rw_returns.flatten()),
         "adf_pvalue": adf_pvalue(rw_returns.flatten()),
-        "skewness": skewness(rw_returns),
-        "kurtosis": kurtosis(rw_returns),
+        "skewness": skewness(rw_returns.flatten()),
+        "kurtosis": kurtosis(rw_returns.flatten()),
         "max_drawdown": np.mean([max_drawdown(path) for path in rw])
     },
 
     "GBM": {
-        "mean": np.mean(gbm_returns.flatten()) * 252,
-        "volatility": np.std(gbm_returns.flatten()) * np.sqrt(252),
+        "mean": np.mean(gbm_returns) * 252,
+        "volatility": np.std(gbm_returns) * np.sqrt(252),
         "autocorr": autocorr(gbm_returns.flatten()),
         "adf_pvalue": adf_pvalue(gbm_returns.flatten()),
-        "skewness": skewness(gbm_returns),
-        "kurtosis": kurtosis(gbm_returns),
+        "skewness": skewness(gbm_returns.flatten()),
+        "kurtosis": kurtosis(gbm_returns.flatten()),
         "max_drawdown": np.mean([max_drawdown(path) for path in gbm])
     },
 
     "OU": {
-        "mean": np.mean(ou_returns.flatten()) * 252,
-        "volatility": np.std(ou_returns.flatten()) * np.sqrt(252),
+        "mean": np.mean(ou_returns) * 252,
+        "volatility": np.std(ou_returns) * np.sqrt(252),
         "autocorr": autocorr(ou_returns.flatten()),
         "adf_pvalue": adf_pvalue(ou_returns.flatten()),
-        "skewness": skewness(ou_returns),
-        "kurtosis": kurtosis(ou_returns),
+        "skewness": skewness(ou_returns.flatten()),
+        "kurtosis": kurtosis(ou_returns.flatten()),
         "max_drawdown": np.mean([max_drawdown(path) for path in ou])
     }
 }
