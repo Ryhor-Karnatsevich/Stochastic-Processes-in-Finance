@@ -2,10 +2,15 @@
  
 The goal of this research is to explore how different stochastic processes can be applied to simulate the behavior of financial assets.
 
+## Hypothesis
+
+
 ## Processes modeling
 **Random walk**
 
 ![formula](Data/Pictures/random.png)
+
+was used geometrical formula to extend logarithmic return in further analysis. due to that showed up Jensen's inequality.
 
 
 **Geometric Brownian Motion**

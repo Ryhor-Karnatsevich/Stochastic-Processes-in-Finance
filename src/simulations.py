@@ -1,6 +1,4 @@
 import numpy as np
-import matplotlib.pyplot as plt
-
 
 class Simulations:
     def __init__(self, iterations = 1, s = 100, dt = 1/252):
@@ -49,7 +47,7 @@ class Simulations:
     # μ is a constant called the (long-term) mean
     # St = S(t-1) + θ*(μ - S(t-1))*dt + σ*Wt*dt
     # θ = theta
-    def ornstein_uhlenbeck_process(self, walk_length = 504 , volatility = 0.2, long_term_mean = 110, theta = 0.7):
+    def ornstein_uhlenbeck_process(self, walk_length = 504 , volatility = 0.2, long_term_mean = 110, theta = 0.2):
         Wt = np.random.normal(0,1,(self.iterations, walk_length))
 
         # Starting matrix

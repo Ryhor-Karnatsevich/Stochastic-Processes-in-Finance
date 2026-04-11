@@ -1,14 +1,18 @@
-from data import Data
-from simulations import Simulations
 import matplotlib.pyplot as plt
 import numpy as np
-from statsmodels.tsa.stattools import adfuller
 from statsmodels.graphics.tsaplots import plot_acf
+import pandas as pd
 
+from metrics import skewness, kurtosis, max_drawdown, autocorr, adf_pvalue
+from data import Data
+from simulations import Simulations
+from style import print_styled_table
 
+# Additional configurations for pycharm console
+pd.set_option('display.max_columns', None)
+pd.set_option('display.width', 1000)
+pd.options.display.float_format = '{:.4f}'.format
 
-# Class Simulations: iterations, s (start price), dt (default = 1/252)
-# Class Data: ticker
 
 
 # Data Preparing
@@ -27,16 +31,16 @@ print(round(mean_annual_return,4), round(annual_volatility,4))
 long_term_mean = np.mean(df["Close"].values)
 np.random.seed(52)
 
-
+ou_vol = np.std(df["Close"].values)
 # ======================================================================================================================
 # Execution
-sim = Simulations(iterations=100, s=starting_price)
+sim = Simulations(iterations=10, s=starting_price)
 
 gbm = sim.geometric_brownian_motion(mean_annual_return = mean_annual_return, volatility = annual_volatility)
 
 rw = sim.geometric_random_walk()
 
-ou = sim.ornstein_uhlenbeck_process(long_term_mean=long_term_mean)
+ou = sim.ornstein_uhlenbeck_process(long_term_mean=long_term_mean, volatility = ou_vol)
 
 # Data transformation
 real_returns = np.log(df["Close"].values[1:] / df["Close"].values[:-1])
@@ -48,53 +52,55 @@ rw_returns = np.log(rw[:, 1:] / rw[:, :-1])
 # =======================
 # STATISTICS TABLE
 # =======================
-
-def autocorr(x):
-    x = np.asarray(x).flatten()
-    x = x[~np.isnan(x)]
-    if len(x) < 2:
-        return np.nan
-    return np.corrcoef(x[:-1], x[1:])[0, 1]
-
-def adf_pvalue(x):
-    return adfuller(x)[1]
-
 stats = {
     "Real": {
-        "mean": np.mean(real_returns),
-        "var": np.var(real_returns),
+        "mean": np.mean(real_returns) * 252,
+        "volatility": np.std(real_returns) * np.sqrt(252),
         "autocorr": autocorr(real_returns),
-        "adf_pvalue": adf_pvalue(real_returns)
+        "adf_pvalue": adf_pvalue(real_returns),
+        "skewness": skewness(real_returns),
+        "kurtosis": kurtosis(real_returns),
+        "max_drawdown": max_drawdown(df["Close"].values)
     },
+
     "RW": {
-        "mean": np.mean(rw_returns.flatten()),
-        "var": np.var(rw_returns.flatten()),
+        "mean": np.mean(rw_returns.flatten()) * 252,
+        "volatility": np.std(rw_returns.flatten()) * np.sqrt(252),
         "autocorr": autocorr(rw_returns.flatten()),
-        "adf_pvalue": adf_pvalue(rw_returns.flatten())
+        "adf_pvalue": adf_pvalue(rw_returns.flatten()),
+        "skewness": skewness(rw_returns),
+        "kurtosis": kurtosis(rw_returns),
+        "max_drawdown": np.mean([max_drawdown(path) for path in rw])
     },
+
     "GBM": {
-        "mean": np.mean(gbm_returns.flatten()),
-        "var": np.var(gbm_returns.flatten()),
+        "mean": np.mean(gbm_returns.flatten()) * 252,
+        "volatility": np.std(gbm_returns.flatten()) * np.sqrt(252),
         "autocorr": autocorr(gbm_returns.flatten()),
-        "adf_pvalue": adf_pvalue(gbm_returns.flatten())
+        "adf_pvalue": adf_pvalue(gbm_returns.flatten()),
+        "skewness": skewness(gbm_returns),
+        "kurtosis": kurtosis(gbm_returns),
+        "max_drawdown": np.mean([max_drawdown(path) for path in gbm])
     },
+
     "OU": {
-        "mean": np.mean(ou_returns.flatten()),
-        "var": np.var(ou_returns.flatten()),
+        "mean": np.mean(ou_returns.flatten()) * 252,
+        "volatility": np.std(ou_returns.flatten()) * np.sqrt(252),
         "autocorr": autocorr(ou_returns.flatten()),
-        "adf_pvalue": adf_pvalue(ou_returns.flatten())
+        "adf_pvalue": adf_pvalue(ou_returns.flatten()),
+        "skewness": skewness(ou_returns),
+        "kurtosis": kurtosis(ou_returns),
+        "max_drawdown": np.mean([max_drawdown(path) for path in ou])
     }
 }
+
+
 # =======================
 # PRINT TABLE
 # =======================
-
-import pandas as pd
-
 table = pd.DataFrame(stats).T
+print_styled_table(table, "STATISTICAL COMPARISON: REAL vs MODELS")
 
-print("\n=== STATISTICS SUMMARY ===\n")
-print(table)
 
 
 # ======================================================================================================================
@@ -113,6 +119,31 @@ plt.title("Price Paths Comparison",fontsize=24)
 plt.xlabel("Steps",fontsize=20)
 plt.locator_params(axis='x', nbins=20)
 plt.ylabel("Price",fontsize=20)
+plt.grid(alpha=0.3)
+
+plt.show()
+
+
+# ======================================================================================================================
+# MEAN PRICE CURVES
+plt.figure(figsize=(12,6))
+
+real_prices = df["Close"].values
+
+gbm_mean = np.mean(gbm, axis=0)
+rw_mean = np.mean(rw, axis=0)
+ou_mean = np.mean(ou, axis=0)
+
+plt.plot(real_prices, label=f"{ticker}")
+plt.plot(rw_mean[:len(real_prices)], label="Random Walk", alpha=0.5)
+plt.plot(gbm_mean[:len(real_prices)], label="Geometric Brownian Motion")
+plt.plot(ou_mean[:len(real_prices)], label="Ornstein-Uhlenbeck Process", alpha=0.8)
+
+plt.legend()
+plt.title("Mean Price Paths Comparison", fontsize=24)
+plt.xlabel("Steps", fontsize=20)
+plt.locator_params(axis='x', nbins=20)
+plt.ylabel("Price", fontsize=20)
 plt.grid(alpha=0.3)
 
 plt.show()
