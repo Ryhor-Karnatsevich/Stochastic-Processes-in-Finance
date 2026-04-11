@@ -19,6 +19,19 @@ The goal of this research is to explore how different stochastic processes can b
 
 ![formula](Data/Pictures/OU.png)
 
+## Prices change
+
+![formula](Data/Pictures/prices.png)
+
+---
+
 ## Distribution
 
-![formula](Data/Pictures/4.png)
+
+![formula](Data/Pictures/distribution.png)
+
+---
+
+# Autocorrelatio
+
+![formula](Data/Pictures/autocorrelation.png)
