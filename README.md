@@ -32,6 +32,6 @@ The goal of this research is to explore how different stochastic processes can b
 
 ---
 
-# Autocorrelatio
+## Autocorrelation
 
 ![formula](Data/Pictures/autocorrelation.png)

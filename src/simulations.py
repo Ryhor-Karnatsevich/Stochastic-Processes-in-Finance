@@ -10,13 +10,17 @@ class Simulations:
 
 
     # Random Walk
-    # St = S(t-1) + Et
-    def random_walk(self,walk_length = 504):
+    # St = S(t-1) * exp(Et * √dt)
+    # used geometric version to ensure data integrity in further logarithmic data comparison
+    def geometric_random_walk(self, walk_length=504):
         Et = np.random.normal(0, 1, (self.iterations, walk_length))
-        cumulative_sum = np.cumsum(Et, axis=1)
+        increments = Et * np.sqrt(self.dt)
+
+        cumulative_sum = np.cumsum(increments, axis=1)
+
         zeros_column = np.zeros((self.iterations, 1))
         paths_with_changes = np.column_stack([zeros_column, cumulative_sum])
-        results = paths_with_changes + self.s
+        results = self.s * np.exp(paths_with_changes)
         return results
 
 
@@ -57,22 +61,3 @@ class Simulations:
             matrix[:, t] = (prev_S + theta * (long_term_mean - prev_S) * self.dt + volatility * Wt[:, t - 1] * np.sqrt(self.dt))
 
         return matrix
-
-
-
-    def plot_one_path(self, process='gbm', **kwargs):
-        if process == 'rw':
-            paths = self.random_walk(**kwargs)
-        elif process == 'gbm':
-            paths = self.geometric_brownian_motion(**kwargs)
-        elif process == 'ou':
-            paths = self.ornstein_uhlenbeck_process(**kwargs)
-        else:
-            raise ValueError("process must be 'rw', 'gbm', or 'ou'")
-
-        plt.figure(figsize=(12, 6))
-        plt.plot(paths[0])
-        plt.title(f"{process.upper()}")
-        plt.xlabel("time step")
-        plt.ylabel("price")
-        plt.show()
