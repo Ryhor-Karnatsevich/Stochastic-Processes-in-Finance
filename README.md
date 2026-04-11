@@ -21,6 +21,4 @@ The goal of this research is to explore how different stochastic processes can b
 
 ## Distribution
 
-![formula](Data/Pictures/1.png)
-![formula](Data/Pictures/2.png)
-![formula](Data/Pictures/3.png)
+![formula](Data/Pictures/4.png)

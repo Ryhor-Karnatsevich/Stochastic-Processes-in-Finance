@@ -17,7 +17,7 @@ class Simulations:
         for number in range(self.iterations):
             start = [self.s]
             for i in range(walk_length):
-                change = np.random.normal(0, 1)
+                change = np.random.normal(0, 5)
                 start.append(start[-1] + change)
             results.append(start)
         return results
@@ -47,13 +47,13 @@ class Simulations:
     # μ is a constant called the (long-term) mean
     # St = S(t-1) + θ*(μ - S(t-1))*dt + σ*Wt*dt
 
-    def ornstein_uhlenbeck_process(self, walk_length = 504 , volatility = 0.2,Long_term_mean = 110, theta = 0.02):
+    def ornstein_uhlenbeck_process(self, walk_length = 504 , volatility = 0.2, long_term_mean = 110, theta = 0.7):
         results = []
         for number in range(self.iterations):
             start = [self.s]
             for i in range(walk_length):
                 Wt = np.random.normal(0, 1)
-                start.append(start[-1] + theta * (Long_term_mean - start[-1]) * self.dt + volatility * Wt * np.sqrt(self.dt))
+                start.append(start[-1] + theta * (long_term_mean - start[-1]) * self.dt + volatility * Wt * np.sqrt(self.dt))
             results.append(start)
         return results
 
