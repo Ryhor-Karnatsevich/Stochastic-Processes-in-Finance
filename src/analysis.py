@@ -14,39 +14,53 @@ pd.set_option('display.width', 1000)
 pd.options.display.float_format = '{:.4f}'.format
 
 
+# ======================================================================================================================
+# SETUP
+np.random.seed(51)
+# Do you want to model index or stock ?
+index = False      # True False
+# csv or yfinance ?
+local = True
+if local:
+    theta = 3 if index else 2.5
+    path = "../Data/Assets/index.csv" if index else "../Data/Assets/stock.csv"
+    raw_data = pd.read_csv(path)
+    # Get ticker from the first cell
+    ticker = str(raw_data.iloc[0, 0])
+    # Convert everything to numeric, strings become NaN
+    raw_data = raw_data.apply(pd.to_numeric, errors='coerce')
+    # Drop rows with NaN (the text headers)
+    raw_data = raw_data.dropna().reset_index(drop=True)
 
-# Setup
-np.random.seed(52)
-index = True  # Do you want to model index or stock ?
-if index:
-    ticker = "^VIX"
-    theta = 1.5
 else:
-    ticker = "AAPL"
-    theta = 0.25
+    theta = 3 if index else 2.5
+    ticker = "^VIX" if index else "AAPL"
+    raw_data = Data(ticker=ticker).load()
 
 
-# Load data from yfinance
-df = Data(ticker=ticker).load()
-ticker = ticker.replace("^", "") # just for beauty
-df = df[["Close"]].tail(505) # 505 to have the same walk length = 2 years ( 2 * 252)
+
+
+# ======================================================================================================================
+# Linear Parameters
+df = raw_data[["Close"]].tail(505) # 505 to have the same walk length = 2 years ( 2 * 252)
+starting_price = df["Close"].iloc[0].item()
+# Logarithmic parameters
 df["Return"] = np.log(df["Close"]) - np.log(df["Close"].shift(1)) # returns in logarithmic space for consistency
 df = df.dropna()
-
-
-# Parameters
-starting_price = df["Close"].iloc[0].item()
-# logarithmic parameters
 real_returns = df["Return"].values
 mean_annual_return = np.mean(real_returns) * 252
 annual_volatility = np.std(real_returns) * np.sqrt(252)
 log_prices = np.log(df["Close"].values) # price mean
 long_term_mean = np.mean(log_prices)
 
+print(f"Starting Price: {round(starting_price,2)} $")
+print(f"Mean Annual Return: {round(mean_annual_return*100,2)} %")
+print(f"Annual Volatility: {round(annual_volatility*100,2)} %")
+print(f"Long Term Mean Price: {round(np.exp(long_term_mean),2)} $")
 
 # ======================================================================================================================
 # Execution
-sim = Simulations(iterations=100, s=starting_price)
+sim = Simulations(iterations=200, s=starting_price)
 
 rw = sim.geometric_random_walk()
 
@@ -64,6 +78,7 @@ rw_returns = np.log(rw[:, 1:] / rw[:, :-1])
 
 
 # STATISTICS TABLE
+ticker = ticker.replace("^", "") # just for beauty
 stats = {
     f"{ticker}": {
         "mean": np.mean(real_returns) * 252,
@@ -122,16 +137,17 @@ plt.figure(figsize=(12,6))
 
 real_prices = df["Close"].values
 
-plt.plot(real_prices, label=f"{ticker}")
+plt.plot(real_prices, label=f"{ticker}",alpha=0.9)
 plt.plot(rw[0][:len(real_prices)], label="Random Walk",alpha=0.5)
-plt.plot(gbm[0][:len(real_prices)], label="Geometric Brownian Motion")
-plt.plot(ou[0][:len(real_prices)], label="Ornstein-Uhlenbeck Process",alpha=0.8)
+plt.plot(gbm[0][:len(real_prices)], label="Geometric Brownian Motion",alpha=0.7)
+plt.plot(ou[0][:len(real_prices)], label="Ornstein-Uhlenbeck Process",alpha=0.7)
 
 plt.legend()
 plt.title("Price Paths Comparison",fontsize=24)
 plt.xlabel("Steps",fontsize=20)
 plt.locator_params(axis='x', nbins=20)
 plt.ylabel("Price",fontsize=20)
+plt.axhline(y=round(np.exp(long_term_mean),2), color='black', linestyle='--', label="Long Term Mean Price",alpha=0.2)
 plt.grid(alpha=0.3)
 
 plt.show()
@@ -147,16 +163,17 @@ gbm_mean = np.mean(gbm, axis=0)
 rw_mean = np.mean(rw, axis=0)
 ou_mean = np.mean(ou, axis=0)
 
-plt.plot(real_prices, label=f"{ticker}")
+plt.plot(real_prices, label=f"{ticker}",alpha=0.9)
 plt.plot(rw_mean[:len(real_prices)], label="Random Walk", alpha=0.5)
-plt.plot(gbm_mean[:len(real_prices)], label="Geometric Brownian Motion")
-plt.plot(ou_mean[:len(real_prices)], label="Ornstein-Uhlenbeck Process", alpha=0.8)
+plt.plot(gbm_mean[:len(real_prices)], label="Geometric Brownian Motion",alpha=0.7)
+plt.plot(ou_mean[:len(real_prices)], label="Ornstein-Uhlenbeck Process", alpha=0.7)
 
 plt.legend()
 plt.title("Mean Price Paths Comparison", fontsize=24)
 plt.xlabel("Steps", fontsize=20)
 plt.locator_params(axis='x', nbins=20)
 plt.ylabel("Price", fontsize=20)
+plt.axhline(y=round(np.exp(long_term_mean),2), color='black', linestyle='--', label="Long Term Mean Price",alpha=0.2)
 plt.grid(alpha=0.3)
 
 plt.show()
@@ -208,3 +225,16 @@ axes[1,1].set_ylim(-0.05, 0.05)
 
 plt.tight_layout()
 plt.show()
+
+# ======================================================================================================================
+# Want to save csv?
+save = False
+if not local and save:
+    save_df = raw_data.copy()
+
+    # Add one header row with ticker name
+    ticker_row = pd.DataFrame([[ticker] * len(save_df.columns)], columns=save_df.columns)
+    save_df = pd.concat([ticker_row, save_df]).reset_index(drop=True)
+
+    out_path = "../Data/Assets/index.csv" if index else "../Data/Assets/stock.csv"
+    save_df.to_csv(out_path, index=False)
