@@ -45,7 +45,7 @@ class Simulations:
     #==================================================================================================================================
     # Ornstein-Uhlenbeck process
     # μ is a constant called the (long-term) mean
-    # St = S(t-1) + θ*(μ - S(t-1))*dt + σ*Wt*dt
+    # St = S(t-1) + θ*(μ - S(t-1))*dt + σ*Wt*dt^1/2
     # θ = theta
     def ornstein_uhlenbeck_process(self, walk_length=504, volatility=0.2, long_term_mean=None, theta=0.5):
         St = np.zeros((self.iterations, walk_length + 1))

@@ -1,6 +1,6 @@
 import  pandas as pd
 
-def print_styled_table(df, title, length=140):
+def print_styled_table(df, title, length=150):
     print("\n" + "=" * length)
     print(title.center(length))
     print("=" * length)
@@ -18,8 +18,8 @@ def print_styled_table(df, title, length=140):
         "max_drawdown": "Max Drawdown"
     })
 
-    percent_cols = ["Mean Annual Return", "Max Drawdown"]
-    small_float_cols = ["Volatility","ADF price"]
+    percent_cols = ["Mean Annual Return", "Max Drawdown","Volatility"]
+    small_float_cols = ["ADF price"]
     normal_float_cols = ["Autocorr (lag1)", "ADF p-value", "Skewness", "Kurtosis"]
 
     for col in percent_cols:
