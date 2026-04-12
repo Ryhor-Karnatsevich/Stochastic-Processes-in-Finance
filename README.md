@@ -22,6 +22,10 @@ was used geometrical formula to extend logarithmic return in further analysis. d
 
 **Ornstein-Uhlenbeck process**
 
+does not fit to simulate single stock. shows strong attraction to the average
+
+"While the classical Ornstein-Uhlenbeck process is defined in price space, I reformulated it in log-space to maintain consistency with GBM and RW models."
+
 ![formula](Data/Pictures/OU.png)
 
 ## Prices change

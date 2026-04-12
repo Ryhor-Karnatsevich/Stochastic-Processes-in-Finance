@@ -10,7 +10,3 @@ class Data:
     def load(self):
         self.data = yf.download(self.ticker, start=self.start)
         return self.data
-
-    def get_returns(self):
-        returns = self.data["Close"].pct_change().dropna()
-        return returns

@@ -12,13 +12,14 @@ def print_styled_table(df, title, length=140):
         "volatility": "Volatility",
         "autocorr": "Autocorr (lag1)",
         "adf_pvalue": "ADF p-value",
+        "adf_price": "ADF price",
         "skewness": "Skewness",
         "kurtosis": "Kurtosis",
         "max_drawdown": "Max Drawdown"
     })
 
     percent_cols = ["Mean Annual Return", "Max Drawdown"]
-    small_float_cols = ["Volatility"]
+    small_float_cols = ["Volatility","ADF price"]
     normal_float_cols = ["Autocorr (lag1)", "ADF p-value", "Skewness", "Kurtosis"]
 
     for col in percent_cols:
@@ -44,6 +45,7 @@ def print_styled_table(df, title, length=140):
         "Volatility",
         "Autocorr (lag1)",
         "ADF p-value",
+        "ADF price",
         "Skewness",
         "Kurtosis",
         "Max Drawdown"
@@ -55,3 +57,4 @@ def print_styled_table(df, title, length=140):
 
     output = df_print.to_string(justify='center', col_space=14)
     print(output)
+    print("=" * length)
