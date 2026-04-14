@@ -51,13 +51,28 @@ Random component: Wt ~ N(0,1)
 
 
 ## Processes
+
+---
+
 ### Random Walk
 Pure stochastic process - only basic external variables.
 
-In log-space: increment = ε * √dt
+Theoretical Linear foundation:
 
-Then: S_t = S_0 * exp(cumulative sum)
+![formula](Data/Pictures/random_walk_theory.png)
 
+
+To ensure that process in logarithmic space I needed to reformulate It. 
+
+Let Et ~ N(0,1) be independent standard normal variables. Then:
+
+![formula](Data/Pictures/random_walk_calculations.png)
+
+Meaning that:
+
+![formula](Data/Pictures/random_walk.png)
+
+In log-space: the increment is simply Et · √dt, and the price is linear.
 
 **Jensen's Inequality:** 
 - Geometric version is used to stay consistent with log-returns
@@ -66,14 +81,6 @@ Then: S_t = S_0 * exp(cumulative sum)
     - Even if log-returns have zero mean, expected price grows over time.
     - This creates an upward bias in simulated paths, which is a known artifact of geometric formulation.
 
-
-Geometric Version of Random Walk:
-
-![formula](Data/Pictures/rw_used.png)
-
-Theoretical Linear foundation:
-
-![formula](Data/Pictures/random.png)
 
 ---
 
@@ -184,16 +191,6 @@ Theoretical foundation:
 
 NOTES
 - Most of the calculations were made using vectorization and class.
-
-
-
-
-
-
-
-
-
-
 
 
 
