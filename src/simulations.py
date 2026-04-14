@@ -24,7 +24,7 @@ class Simulations:
 
     #==================================================================================================================================
     # Geometric Brownian Motion
-    # St = S(t-1) * e^(( μ - σ^2/2)*dt + σ*Et*dt)
+    # St = S(t-1) * exp((μ - σ^2/2)*dt + σ*Et*sqrt(dt))
     # μ = mean annual return(the percentage drift) | σ = volatility
     # Wt is a Wiener process of Brownian Motion
     def geometric_brownian_motion(self, walk_length=504, volatility=0.2, mean_annual_return=0.1):
@@ -50,13 +50,13 @@ class Simulations:
     def ornstein_uhlenbeck_process(self, walk_length=504, volatility=0.2, long_term_mean=None, theta=0.5):
         St = np.zeros((self.iterations, walk_length + 1))
         St[:, 0] = np.log(self.s)
-        Wt = np.random.normal(0, 1, (self.iterations, walk_length))
+        Et = np.random.normal(0, 1, (self.iterations, walk_length))
         mean = long_term_mean
         for t in range(1, walk_length + 1):
             St[:, t] = (
                     St[:, t - 1]
                     + theta * (mean - St[:, t - 1]) * self.dt
-                    + volatility * np.sqrt(self.dt) * Wt[:, t - 1]
+                    + volatility * np.sqrt(self.dt) * Et[:, t - 1]
             )
 
         return np.exp(St)

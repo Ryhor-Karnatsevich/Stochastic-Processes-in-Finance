@@ -1,15 +1,23 @@
 # Stochastic Processes in Finance
  
-The goal of this research is to explore how different stochastic processes can be applied to simulate the behavior of financial assets.
-Four Hypothesis were questioned and explored on different assets.
+The goal of this research is to explore how different theoretical stochastic processes can be applied in real modeling.
 
-## Hypothesis
+Explore if those models are useful to simulate the behavior of financial assets.
 
-1. Market has a weak form of efficiency
-2. Market follows a random walk
-3. Market prices follow a lognormal distribution
-4. Market is attracted to some long-term average
+And Prove or deny four Hypothesis on example of stock and index.
 
+## Hypotheses
+
+1. Financial returns exhibit weak-form market efficiency, meaning no significant autocorrelation in returns.
+
+
+2. Asset price dynamics can be approximated by a random walk process, based on the statistical behavior of returns.
+
+
+3. Returns distribution matches the assumptions of the Geometric Brownian Motion model.
+
+
+4. Asset prices exhibit mean-reverting behavior, which can be detected using stationarity tests.
 
 ## Methodology
 ### Data
@@ -29,13 +37,18 @@ Four Hypothesis were questioned and explored on different assets.
 ### Why logarithmic space?
 All calculations are performed in logarithmic space for consistency and mathematical correctness:
 
-Returns are additive: log(S_t / S_{t-1})
+Returns are additive: log(St / S(t-1))
 
+- This allows modeling price dynamics as cumulative sums of increments, instead of multiplicative growth.
 - Models like GBM are naturally defined in log-space. So it was decided to equal other processes for competent analysis.
 - Volatility scales correctly with time
 - Prevents distortion when comparing different processes
 
-Final prices are converted back using: exp(log_price)
+
+Prices are recovered by exponentiating the log-process.
+- RW / GBM: St = S0 * exp(Xt)
+- OU: St = exp(Xt), since log-price is modeled directly
+ 
 
 ### Simulation setup
 - Number of simulations: 200
@@ -45,16 +58,32 @@ All models use the same:
 - starting price
 - time horizon
 
-Random component: Wt ~ N(0,1)
+
+**Random component** - Wt is a Wiener process such that: dWt ~ N(0, dt)
+- The Wiener process can be seen as a random walk in continuous time. 
+- It serves as the common source of randomness across all simulated processes.
 
 
+## Discretization Approach
+- Continuous-time stochastic differential equations (SDEs) cannot be implemented directly in code.
+- Therefore, all models were transformed into discrete-time form using **Euler** discretization.
+
+
+**Euler** discretization approximates continuous dynamics by replacing infinitesimal changes with small finite steps:
+
+- dt represents a small time increment
+- differential terms (dX, dWt) are replaced with discrete changes
+
+As a result:
+- deterministic components scale with dt
+- stochastic components scale with √dt
+
+This allows simulation of continuous stochastic processes using iterative updates.
 
 
 ## Processes
 
-
 ---
-
 
 ### Random Walk
 Pure stochastic process - only basic external variables.
@@ -74,7 +103,9 @@ Meaning that:
 
 ![formula](Data/Pictures/random_walk.png)
 
-In log-space: the increment is simply Et · √dt, and the price is linear.
+In log-space, the process evolves as a linear random walk with increments Et · √dt.
+
+The price itself is obtained via exponentiation, making it non-linear.
 
 **Jensen's Inequality:** 
 - Geometric version is used to stay consistent with log-returns
@@ -82,6 +113,12 @@ In log-space: the increment is simply Et · √dt, and the price is linear.
     - E[exp(X)] > exp(E[X])
     - Even if log-returns have zero mean, expected price grows over time.
     - This creates an upward bias in simulated paths, which is a known artifact of geometric formulation.
+- In this project:
+  - the effect is preserved intentionally
+  - no martingale correction is applied
+  - since it does not distort return-based statistics
+
+**Note:** "Why √dt?" is gonna be explained on Geometric Brownian Motion example and is applied to every model in my project.
 
 ---
 
@@ -104,64 +141,60 @@ Where:
 In the increment formula, the deterministic part scales with dt (linear drift over time), while the stochastic part scales with √dt.
 
 **Why √dt?**
-
-In the continuous-time model, the Wiener process increment dWt has variance dt
+- In Brownian Motion applied Wiener Process as a base for stochastic part.
+- In the continuous-time model, the Wiener process increment dWt has variance dt
 
 ![formula](Data/Pictures/gbm_var.png)
 
-In discrete simulation, is used E ~ N(0,1) which has variance 1.
+In discrete simulation, is used Et ~ N(0,1) which has variance 1.
 
-To transform E ~ N(0,1) into dWt ~ N(0, dt), we multiply E by √dt (the standard deviation of dWt).
+To transform Et ~ N(0,1) into dWt ~ N(0, dt), multiply Et by √dt (the standard deviation of dWt).
 
 ![formula](Data/Pictures/gbm_stoch.png)
 
 This scaling ensures that the stochastic part has the correct variance dt
 
-
+**Conclusion**
+- The model combines:
+  - deterministic exponential growth (drift)
+  - stochastic fluctuations (volatility)
+- Unlike Random Walk:
+  - GBM has a built-in trend
+  - growth is controlled by μ
 
 ---
 
 ### Ornstein-Uhlenbeck process
-Ornstein–Uhlenbeck Process (OU)
 
-Mean-reverting process:
-
-dX = θ(μ - X) dt + σ dW
-
-In this project:
-
-Applied in log-space
-Then exponentiated back to price
-
-Where:
-
-μ = long-term mean (log price)
-θ = speed of mean reversion
-
-Key properties:
-
-Pulls process toward mean
-Stationary in log-space
-Suitable for mean-reverting assets
-
-Notes:
-- While the classical Ornstein-Uhlenbeck process is defined in linear space, I reformulated it in log-space to maintain consistency with other processes.
-- Model assumes a constant long-term mean, which may not reflect real market dynamics.
-
+Mean-reverting process.
 
 Theoretical foundation:
 
 ![formula](Data/Pictures/OU.png)
 
+Let Et ~ N(0,1) be independent standard normal variables. Then discrete version looks like:
+
+![formula](Data/Pictures/ou_used.png)
+
+- Et was also transformed to get Wiener's Process variance as it was in previous model.
+- New variable **theta** - measures the speed of getting back to μ. (Mean Reversion part)
+
+Where:
+- μ = Long-term Mean (log price)
+- θ = Speed of Mean Reversion (theta)
+- σ = Annual Volatility
+
+Notes:
+- While the classical Ornstein-Uhlenbeck process is defined in linear space, I reformulated it in log-space to maintain consistency with other processes.
+- Model assumes a constant long-term mean, which may not reflect real market dynamics.
+
+**Conclusion**
+- Unlike GBM, the OU process does not accumulate drift over time.
+- Instead - deviations from the mean are continuously corrected and growth is suppressed.
+- This explains why OU paths are gonna appear “flat” and fail to reproduce trending behavior of stocks
+- The process is stationary in log-space (under constant μ)
+
 ---
-
-
-
-## Limitations
-- OU does not fit to simulate single stock. shows strong attraction to the average
-
-
-
 
 ## Stock 
 
@@ -193,11 +226,8 @@ Theoretical foundation:
 
 
 
-
-
-
-
-
+## Limitations
+- OU does not fit to simulate single stock. shows strong attraction to the average
 
 NOTES
 - Most of the calculations were made using vectorization and class.
