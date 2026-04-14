@@ -52,7 +52,9 @@ Random component: Wt ~ N(0,1)
 
 ## Processes
 
+
 ---
+
 
 ### Random Walk
 Pure stochastic process - only basic external variables.
@@ -81,33 +83,41 @@ In log-space: the increment is simply Et · √dt, and the price is linear.
     - Even if log-returns have zero mean, expected price grows over time.
     - This creates an upward bias in simulated paths, which is a known artifact of geometric formulation.
 
-
 ---
 
 ### Geometric Brownian Motion
 
-Adds deterministic drift to random walk:
-
-(log form)
-
-d log S = (μ - σ²/2) dt + σ dW
-
-Where:
-
-μ = mean annual return
-σ = volatility
-
-Key properties:
-
-Log returns are normally distributed
-Prices are lognormally distributed
-No mean reversion
-Trend-driven behavior
-
+Adds deterministic drift to random walk
 
 Theoretical foundation:
 
 ![formula](Data/Pictures/Brownian_motion.png)
+
+Let Et ~ N(0,1) be independent standard normal variables. Then discrete version looks like:
+
+![formula](Data/Pictures/brownian_motion_calculations.png)
+
+Where:
+- μ = Mean Annual Return
+- σ = Annual Volatility
+
+In the increment formula, the deterministic part scales with dt (linear drift over time), while the stochastic part scales with √dt.
+
+**Why √dt?**
+
+In the continuous-time model, the Wiener process increment dWt has variance dt
+
+![formula](Data/Pictures/gbm_var.png)
+
+In discrete simulation, is used E ~ N(0,1) which has variance 1.
+
+To transform E ~ N(0,1) into dWt ~ N(0, dt), we multiply E by √dt (the standard deviation of dWt).
+
+![formula](Data/Pictures/gbm_stoch.png)
+
+This scaling ensures that the stochastic part has the correct variance dt
+
+
 
 ---
 
