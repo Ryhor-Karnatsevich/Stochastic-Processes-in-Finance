@@ -50,7 +50,7 @@ python src/**analysis.py**
 
 ## Full Report
 
-See full analysis here: **"Full Research Report.md"**
+See full analysis here: **"Full Research Report.pdf"**
 
 ## Hypotheses
 
