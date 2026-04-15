@@ -8,7 +8,7 @@ And Prove or deny four Hypothesis on example of stock and index.
 
 ## Hypotheses
 
-1. Financial returns exhibit weak-form market efficiency, meaning no significant autocorrelation in returns.
+1. Returns exhibit weak-form market efficiency, meaning no significant autocorrelation in returns.
 
 
 2. Asset price dynamics can be approximated by a random walk process, based on the statistical behavior of returns.
@@ -48,7 +48,16 @@ Returns are additive: log(St / S(t-1))
 Prices are recovered by exponentiating the log-process.
 - RW / GBM: St = S0 * exp(Xt)
 - OU: St = exp(Xt), since log-price is modeled directly
- 
+
+
+### Metrics
+
+Were calculated several metrics to explore processes nature and analyze Hypothesis. 
+  - Autocorrelation (with one day lag)
+  - ADF p-value (Augmented Dickey-Fuller, shows if process is stationary)
+  - Skewness  (measures asymmetry in distribution)
+  - Kurtosis (shows what kind of tails in distribution)
+  - Maximum Drawdowns
 
 ### Simulation setup
 - Number of simulations: 200
@@ -64,7 +73,7 @@ All models use the same:
 - It serves as the common source of randomness across all simulated processes.
 
 
-## Discretization Approach
+### Discretization Approach
 - Continuous-time stochastic differential equations (SDEs) cannot be implemented directly in code.
 - Therefore, all models were transformed into discrete-time form using **Euler** discretization.
 
@@ -82,8 +91,6 @@ This allows simulation of continuous stochastic processes using iterative update
 
 
 ## Processes
-
----
 
 ### Random Walk
 Pure stochastic process - only basic external variables.
@@ -196,40 +203,259 @@ Notes:
 
 ---
 
-## Stock 
+## Stock (AAPL)
 
-**Random walk**
-**Geometric Brownian Motion**
-**Ornstein-Uhlenbeck process**
+Based on the empirical AAPL data and simulated processes, it is clear that no single model fully captures real market behavior.
 
-![plot](Data/Pictures/stock_data.png)
-![plot](Data/Pictures/stock_prices.png)
-![plot](Data/Pictures/stock_mean.png)
-![plot](Data/Pictures/stock_dist.png)
+Each process reproduces certain aspects of price dynamics, but also fails in key areas, which allows us to evaluate the validity of the proposed hypotheses.
+
+### Hypothesis [1] (Returns exhibit weak-form market efficiency (no autocorrelation))
+
+| Process             | autocorrelation | 
+|---------------------|-----------------|
+| All Other Processes | ~ 0             | 
+| AAPL                | 0.052           |
+
+- Interpretation:
+  - All theoretical models assume independent increments, which results in zero autocorrelation.
+  - However, real returns show a small but non-zero autocorrelation, indicating that returns are not perfectly independent.
+
+
+Hypothesis is **PARTIALLY SUPPORTED** because of low but not zero correlation.
+
 ![plot](Data/Pictures/stock_autocorrelation.png)
 
+---
+
+### Hypothesis [2] (Asset prices follow a random walk)
 
 
-## Index
+| Process     | Return | Volatility| Max DD |
+|-------------|--------|-----------|-------|
+| Random Walk | ~ 0%   | ~ 100%    | -77%  |
+| AAPL        | ~ 22%  | ~ 28%     | -33%  |
 
-**Random walk**
-**Geometric Brownian Motion**
-**Ornstein-Uhlenbeck process**
+Interpretation:
 
-![plot](Data/Pictures/index_data.png)
-![plot](Data/Pictures/index_prices.png)
-![plot](Data/Pictures/index_mean.png)
-![plot](Data/Pictures/index_dist.png)
+- The Random Walk model represents a pure stochastic process with no structure.
+- It has return almost zero and that is mathematically correct for that process, but its seem unrealistic comparing to real assets.
+- Due to its geometric nature there is a high Volatility and Drawdowns (and Run-up are also should be Bigger than in real assets).
+- Jensen effect shows up in Mean Price Graphic. The greater number of simulations that are being used for calculating mean, the more trend geometrically growing. 
+
+Hypothesis is **REJECTED**
+- Random Walk overestimates risk
+- Fails to reproduce realistic price dynamics
+
+![plot](Data/Pictures/stock_mean.png)
+
+---
+
+### Hypothesis [3] (Returns distribution matches the assumptions of the Geometric Brownian Motion model)
+
+Matches:
+
+| Process                    | Return   | Volatility |
+|----------------------------|----------|------------|
+| Geometric Brownian Motion  | 20.13%   | 28.20%     |
+| AAPL                       | 21.91%   | 28.14%     |
+
+Does not match:
+
+| Process                    | Skewness | Kurtosis |
+|----------------------------|----------|----------|
+| Geometric Brownian Motion  | 0        | 3        |
+| AAPL                       | 0.567    | 13.77    |
+
+Interpretation:
+- Geometric Brownian Motion has been calculated using random variable Et ~ N(0,1).
+- So it has no Fat Tails or Skewness
+- Real asset "AAPL" otherwise has it. It is right skewed and has fat tails (Kurtosis ~ 13.8).
+- GBM's volatility is based on AAPL's so it is consistently that they have same volatility.
+
+Hypothesis is **PARTIALLY REJECTED** because gbm accurately model return and volatility, but with its N(0,1) nature cannot simulate extreme movements of real asset.
+
+![plot](Data/Pictures/stock_dist.png)
+
+---
+
+### Hypothesis 4 (Asset prices exhibit mean-reverting behavior, which can be detected using stationarity tests.)
+
+ADF test was applied to price series to detect stationarity.
+
+| Process                   | ADF price |
+|---------------------------|-----------|
+| Ornstein-Uhlenbeck        | 0.220     |
+| Random Walk               | 0.409     |
+| Geometric Brownian Motion | 0.574     |
+| AAPL                      | 0.180     | 
+
+Interpretation:
+- All processes show p-value > 0.05, meaning no process is detected as stationary.
+- OU has lower p-value compared to RW and GBM
+
+
+Note:
+- In mathematics, the Ornstein–Uhlenbeck process is a stationary Gauss–Markov process, which means that it is a Gaussian process.
+- However, in this simulation, stationarity is not detected by the ADF test, due to possible reasons:
+  - Limited sample size (~500 observations)
+  - Weak mean reversion parameter (θ)
+  - High noise relative to drift
+
+Hypothesis is **REJECTED**
+
+![plot](Data/Pictures/stock_data.png)
+
+---
+
+**Additional Graphic with first iteration:**
+![plot](Data/Pictures/stock_prices.png)
+
+
+
+<!--=============================================================================================================-->
+<!--=============================================================================================================-->
+
+
+
+## Index (VIX)
+
+Based on the VIX data and simulated processes, it is clear that no single model fully captures real market behavior.
+
+Each process reproduces certain aspects of price dynamics, but also fails in key areas, which allows us to evaluate the validity of the proposed hypotheses.
+
+### Hypothesis [1] (Returns exhibit weak-form market efficiency (no autocorrelation))
+
+| Process             | autocorrelation | 
+|---------------------|-----------------|
+| All Other Processes | ~ 0             | 
+| VIX                 | -0.057          |
+
+- Interpretation:
+  - All theoretical models assume independent increments, which results in zero autocorrelation.
+  - However, real returns show a small but non-zero autocorrelation, indicating that returns are not perfectly independent.
+
+
+Hypothesis is **PARTIALLY SUPPORTED** because of low but not zero correlation.
+
 ![plot](Data/Pictures/index_autocorrelation.png)
 
+---
+
+### Hypothesis [2] (Asset prices follow a random walk)
 
 
+| Process     | Return | Volatility | Max DD |
+|-------------|--------|------------|--------|
+| Random Walk | 0.47%  | 100%       | -77%   |
+| VIX         | 9.10%  | 142%       | -74%   |
 
+Interpretation:
+
+- The Random Walk model represents a pure stochastic process with no structure.
+- It has return almost zero and that is mathematically correct for that process, but its seem unrealistic comparing to real assets.
+- тут волатильность и падения отличаются , при том вообще в разные стороны. надо пояснить момент
+- Jensen effect shows up in Mean Price Graphic. The greater number of simulations that are being used for calculating mean, the more trend geometrically growing. 
+- Successes to reproduce realistic price dynamics: -77% ~ -74%
+
+
+Hypothesis is **REJECTED**
+- Random Walk fails to capture extreme volatility levels of VIX
+- Underestimates volatility compared to real data
+- Cannot reproduce correct return dynamics
+
+![plot](Data/Pictures/index_mean.png)
+
+---
+
+### Hypothesis [3] (Returns distribution matches the assumptions of the Geometric Brownian Motion model)
+
+Matches:
+
+| Process                   | Volatility |
+|---------------------------|------------|
+| Geometric Brownian Motion | 142%       |
+| VIX                       | 142%       |
+
+
+Does not match:
+
+| Process                     | Return     | Skewness | Kurtosis  |
+|-----------------------------|------------|----------|-----------|
+| Geometric Brownian Motion   | -80.05%    | 0        | 3         |
+| VIX                         | 9.10%      | 0.925    | 10.113    |
+
+Interpretation:
+- Geometric Brownian Motion has been calculated using random variable Et ~ N(0,1).
+- So it has no Fat Tails or Skewness
+- Real asset "VIX" otherwise has it. It is right skewed and has fat tails (Kurtosis ~ 10.1).
+- GBM absolutely fails in Return predicting.
+- GBM's volatility is based on VIX's so it is consistently that they have same volatility.
+
+Hypothesis is **REJECTED** because it cannot simulate anything, except volatility.
+
+![plot](Data/Pictures/index_dist.png)
+
+---
+
+### Hypothesis 4 (Asset prices exhibit mean-reverting behavior, which can be detected using stationarity tests.)
+
+ADF test was applied to price series to detect stationarity.
+
+| Process                   | ADF price |
+|---------------------------|-----------|
+| Ornstein-Uhlenbeck        | 0.240     |
+| Random Walk               | 0.409     |
+| Geometric Brownian Motion | 0.311     |
+| VIX                       | 0.000     | 
+
+Interpretation:
+- VIX is the only model that has p-value < 0.05 , ~0, meaning it is detected as stationary. 
+- Mean-reverting behavior exists in real data, but is not captured by the simulated models.
+- OU has lower p-value compared to RW and GBM, but still > 0.05.
+
+
+Note:
+- In mathematics, the Ornstein–Uhlenbeck process is a stationary Gauss–Markov process, which means that it is a Gaussian process.
+- However, in this simulation, stationarity is not detected by the ADF test, due to possible reasons:
+  - Limited sample size (~500 observations)
+  - Weak mean reversion parameter (θ)
+  - High noise relative to drift
+
+Hypothesis is **SUPPORTED** for real data, but **NOT** reproduced by models.
+
+![plot](Data/Pictures/index_data.png)
+
+---
+
+**Additional Graphic with first iteration:**
+
+![plot](Data/Pictures/index_prices.png)
+
+---
 
 ## Limitations
-- OU does not fit to simulate single stock. shows strong attraction to the average
+- OU model imposes strong mean reversion, which is not observed in trending assets like stocks
+- Real financial returns deviate significantly from normality.
+- This explains why models like GBM, despite matching first and second moments, fail to capture extreme market behavior.
+- Sample size (~500 observations) may be insufficient for reliable stationarity detection
+
+
+## Final Conclusion
+
+No single stochastic process fully captures real market behavior.
+
+- Random Walk: too naive
+- GBM: captures mean and variance, fails higher moments
+- OU: captures mean reversion, but oversimplifies dynamics
+
+Real financial markets exhibit:
+- non-normal returns
+- time-varying volatility
+- complex dependencies not captured by basic models
+
 
 NOTES
+🔹 GBM vs Real → Black-Scholes
 - Most of the calculations were made using vectorization and class.
 
 

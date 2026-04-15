@@ -18,7 +18,7 @@ pd.options.display.float_format = '{:.4f}'.format
 # SETUP
 np.random.seed(51)
 # Do you want to model index or stock ?
-index = False      # True False
+index = True      # True False
 # csv or yfinance ?
 local = True
 if local:
@@ -85,7 +85,7 @@ stats = {
         "volatility": np.std(real_returns) * np.sqrt(252),
         "autocorr": autocorr(real_returns),
         "adf_pvalue": adf_pvalue(real_returns),
-        "adf_price": adf_pvalue(df["Close"].values),
+        "adf_price": adf_pvalue(np.log(df["Close"].values)),
         "skewness": skewness(real_returns),
         "kurtosis": kurtosis(real_returns),
         "max_drawdown": max_drawdown(df["Close"].values)
@@ -118,7 +118,7 @@ stats = {
         "volatility": np.std(ou_returns.flatten()) * np.sqrt(252),
         "autocorr": autocorr(ou_returns.flatten()),
         "adf_pvalue": adf_pvalue(ou_returns.flatten()),
-        "adf_price": np.mean([adf_pvalue(path) for path in ou]),
+        "adf_price": np.mean([adf_pvalue(np.log(path)) for path in ou]),
         "skewness": skewness(ou_returns.flatten()),
         "kurtosis": kurtosis(ou_returns.flatten()),
         "max_drawdown": np.mean([max_drawdown(path) for path in ou])
