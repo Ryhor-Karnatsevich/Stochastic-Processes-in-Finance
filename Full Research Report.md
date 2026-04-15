@@ -198,7 +198,7 @@ Notes:
 **Conclusion**
 - Unlike GBM, the OU process does not accumulate drift over time.
 - Instead - deviations from the mean are continuously corrected and growth is suppressed.
-- This explains why OU paths are gonna appear “flat” and fail to reproduce trending behavior of stocks
+- This explains why OU paths are will appear “flat” and fail to reproduce trending behavior of stocks
 - The process is stationary in log-space (under constant μ)
 
 ---
@@ -217,7 +217,7 @@ Each process reproduces certain aspects of price dynamics, but also fails in key
 | AAPL                | 0.052           |
 
 - Interpretation:
-  - All theoretical models assume independent increments, which results in zero autocorrelation.
+  - All models assume independent increments, which results in zero autocorrelation.
   - However, real returns show a small but non-zero autocorrelation, indicating that returns are not perfectly independent.
 
 
@@ -331,7 +331,7 @@ Each process reproduces certain aspects of price dynamics, but also fails in key
 | VIX                 | -0.057          |
 
 - Interpretation:
-  - All theoretical models assume independent increments, which results in zero autocorrelation.
+  - All models assume independent increments, which results in zero autocorrelation.
   - However, real returns show a small but non-zero autocorrelation, indicating that returns are not perfectly independent.
 
 
@@ -353,7 +353,6 @@ Interpretation:
 
 - The Random Walk model represents a pure stochastic process with no structure.
 - It has return almost zero and that is mathematically correct for that process, but its seem unrealistic comparing to real assets.
-- тут волатильность и падения отличаются , при том вообще в разные стороны. надо пояснить момент
 - Jensen effect shows up in Mean Price Graphic. The greater number of simulations that are being used for calculating mean, the more trend geometrically growing. 
 - Successes to reproduce realistic price dynamics: -77% ~ -74%
 
@@ -442,29 +441,22 @@ Hypothesis is **SUPPORTED** for real data, but **NOT** reproduced by models.
 
 ## Final Conclusion
 
-No single stochastic process fully captures real market behavior.
+The study shows that classical stochastic processes are partially useful but fundamentally insufficient for realistic financial modeling.
 
-- Random Walk: too naive
-- GBM: captures mean and variance, fails higher moments
-- OU: captures mean reversion, but oversimplifies dynamics
+- Random Walk fails to reproduce empirical return, volatility, and risk characteristics, meaning it is not suitable as a standalone model.
+- Geometric Brownian Motion captures first and second moments (return & volatility), but fails on distributional properties (fat tails, skewness).
+- Ornstein–Uhlenbeck correctly represents mean-reversion in theory, but does not generalize to trending assets and was not reliably detected in simulations.
 
-Real financial markets exhibit:
-- non-normal returns
-- time-varying volatility
-- complex dependencies not captured by basic models
-
-
-NOTES
-🔹 GBM vs Real → Black-Scholes
-- Most of the calculations were made using vectorization and class.
+From hypothesis testing:
+- Weak-form efficiency is only approximately valid
+- Random walk assumption is rejected
+- GBM assumptions are partially violated in distributional properties
+- Mean reversion is asset-dependent (present in index, absent in stock)
 
 
+**Overall conclusion:**
 
+Stochastic processes provide a useful theoretical framework, but real financial markets exhibit additional complexities (non-normality, regime changes, volatility clustering) that are not captured by these models.
 
-
-
-
-
-
-
+Therefore, these processes are best treated as baseline models, not as fully adequate representations of asset dynamics.
 
