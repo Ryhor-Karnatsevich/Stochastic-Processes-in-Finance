@@ -54,7 +54,8 @@ Prices are recovered by exponentiating the log-process.
 
 Were calculated several metrics to explore processes nature and analyze Hypothesis. 
   - Autocorrelation (with one day lag)
-  - ADF p-value (Augmented Dickey-Fuller, shows if process is stationary)
+  - ADF (returns based)
+  - ADF p-value (Augmented Dickey-Fuller, shows if process is stationary. Price based)
   - Skewness  (measures asymmetry in distribution)
   - Kurtosis (shows what kind of tails in distribution)
   - Maximum Drawdowns

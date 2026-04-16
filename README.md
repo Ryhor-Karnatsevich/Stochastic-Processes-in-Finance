@@ -101,7 +101,8 @@ Prices are recovered by exponentiating the log-process.
 
 Were calculated several metrics: 
   - Autocorrelation (with one day lag)
-  - ADF p-value (Augmented Dickey-Fuller,stationary)
+  - ADF (returns based)
+  - ADF p-value (Augmented Dickey-Fuller,stationary. Price based)
   - Skewness  
   - Kurtosis 
   - Maximum Drawdowns
