@@ -50,7 +50,7 @@ python src/**analysis.py**
 
 ## Full Report
 
-See full analysis here: **"Full Research Report.pdf"**
+See full analysis here: **"Empirical Study of Stochastic Processes in Financial Markets.pdf"**
 
 ## Hypotheses
 
