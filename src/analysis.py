@@ -13,13 +13,15 @@ import numpy as np
 from statsmodels.graphics.tsaplots import plot_acf
 import pandas as pd
 
-from metrics import skewness, kurtosis, max_drawdown, autocorr, adf_pvalue
+from metrics import skewness, kurtosis, max_drawdown, autocorr, adf_pvalue, monte_carlo_summary
 from data import Data
 from simulations import Simulations
 from report import RESULTS_DIR, write_report, compile_report
 from style import print_styled_table
 
 PROJECT_DIR = Path(__file__).resolve().parents[1]
+MONTE_CARLO_PATHS = 10_000
+CONVERGENCE_SIZES = (200, 1_000, 5_000, 10_000)
 # Additional configurations for pycharm console
 pd.set_option('display.max_columns', None)
 pd.set_option('display.width', 1000)
@@ -28,6 +30,71 @@ pd.options.display.float_format = '{:.4f}'.format
 
 # ======================================================================================================================
 # SETUP
+def monte_carlo(starting_price, mean_return, volatility, long_term_mean,
+                theta, ticker, finish_figure, iterations=MONTE_CARLO_PATHS):
+    """Conditional scenarios on a 504-step grid, with no additional ADF tests."""
+    sim = Simulations(iterations=iterations, s=starting_price)
+    steps = 504
+    horizon = steps * sim.dt
+    drift = mean_return + 0.5 * volatility ** 2
+    models = {
+        "RW": sim.geometric_random_walk,
+        "GBM": lambda: sim.geometric_brownian_motion(
+            mean_annual_return=drift, volatility=volatility),
+        "Log-OU": lambda: sim.ornstein_uhlenbeck_process(
+            long_term_mean=long_term_mean, volatility=volatility, theta=theta),
+    }
+    # Exact moments of the implemented discrete updates, including Euler OU.
+    persistence = 1 - theta * sim.dt
+    ou_mean = long_term_mean + (np.log(starting_price) - long_term_mean) * persistence ** steps
+    ou_variance = volatility ** 2 * sim.dt * sum(persistence ** (2 * k) for k in range(steps))
+    benchmarks = {
+        "RW": np.expm1(horizon / 2),
+        "GBM": np.expm1(drift * horizon),
+        "Log-OU": np.expm1(ou_mean + ou_variance / 2 - np.log(starting_price)),
+    }
+    band_fig, band_axes = plt.subplots(1, 3, figsize=(15, 4.5))
+    convergence_fig, convergence_axes = plt.subplots(1, 3, figsize=(15, 4.5))
+    summaries = {}
+    sizes = sorted({n for n in CONVERGENCE_SIZES if n <= iterations} | {iterations})
+    for ax, (name, generate) in zip(band_axes, models.items()):
+        # Identical Gaussian shocks across models reduce noise in comparisons.
+        # Seed 52 is separate from the original 200-path diagnostic run (51).
+        np.random.seed(52)
+        paths = generate()
+        summaries[name] = monte_carlo_summary(paths)
+        summaries[name]["analytic_mean"] = benchmarks[name]
+        low, median, high = np.quantile(paths, [0.05, 0.5, 0.95], axis=0)
+        ax.fill_between(np.arange(steps + 1), low, high, alpha=0.2, label="5th-95th percentile")
+        ax.plot(median, label="Median")
+        ax.axhline(starting_price, color="grey", linestyle="--", linewidth=0.8)
+        ax.set(title=name, xlabel="Trading steps", ylabel="Level")
+        ax.grid(alpha=0.2)
+        ax.legend(fontsize=8)
+        checkpoints = [monte_carlo_summary(paths[:n]) for n in sizes]
+        for panel, key, se_key in [(0, "mean", "mean_se"), (1, "loss_probability", "loss_se")]:
+            convergence_axes[panel].errorbar(
+                sizes, [row[key] * 100 for row in checkpoints],
+                yerr=[1.96 * row[se_key] * 100 for row in checkpoints],
+                marker="o", capsize=3, label=name)
+        convergence_axes[0].axhline(benchmarks[name] * 100, linestyle=":", alpha=0.6,
+                                    color=f"C{list(models).index(name)}")
+        convergence_axes[2].plot(sizes, [row["q05"] * 100 for row in checkpoints], marker="o", label=name)
+    band_fig.suptitle(f"{ticker}: conditional Monte Carlo simulation bands ({iterations:,} paths)")
+    band_fig.tight_layout()
+    plt.figure(band_fig.number)
+    finish_figure("mc_bands")
+    for ax, title in zip(convergence_axes, ["Mean terminal change (%)", "P(terminal decrease) (%)", "5th percentile change (%)"]):
+        ax.set(title=title, xlabel="Number of paths", xscale="log")
+        ax.grid(alpha=0.2)
+        ax.legend(fontsize=8)
+    convergence_fig.suptitle(f"{ticker}: nested-sample convergence; bars = approximate 95% MC error")
+    convergence_fig.tight_layout()
+    plt.figure(convergence_fig.number)
+    finish_figure("mc_convergence")
+    return dict(table=pd.DataFrame(summaries), iterations=iterations, seed=52, steps=steps)
+
+
 def analyze(index, local=True):
     figures_dir = RESULTS_DIR / "figures" / ("VIX" if index else "AAPL")
     figures_dir.mkdir(parents=True, exist_ok=True)
@@ -82,7 +149,9 @@ def analyze(index, local=True):
 
     rw = sim.geometric_random_walk()
 
-    gbm = sim.geometric_brownian_motion( mean_annual_return = mean_annual_return, volatility = annual_volatility)
+    # The simulator expects arithmetic drift; the estimate above is log drift.
+    gbm_drift = mean_annual_return + 0.5 * annual_volatility ** 2
+    gbm = sim.geometric_brownian_motion(mean_annual_return=gbm_drift, volatility=annual_volatility)
 
     ou = sim.ornstein_uhlenbeck_process( long_term_mean=long_term_mean, volatility=annual_volatility, theta=theta)
 
@@ -97,6 +166,7 @@ def analyze(index, local=True):
 
     # STATISTICS TABLE
     ticker = ticker.replace("^", "") # just for beauty
+    print(f"{ticker}: computing 200-path diagnostics and ADF tests (this may take several minutes)", flush=True)
     stats = {
         f"{ticker}": {
             "mean": np.mean(real_returns) * 252,
@@ -257,11 +327,14 @@ def analyze(index, local=True):
         out_path = PROJECT_DIR / "Data" / "Assets" / ("index.csv" if index else "stock.csv")
         save_df.to_csv(out_path, index=False)
 
+    print(f"{ticker}: running {MONTE_CARLO_PATHS:,} Monte Carlo paths per model (no ADF tests)", flush=True)
+    mc = monte_carlo(starting_price, mean_annual_return, annual_volatility,
+                     long_term_mean, theta, ticker, finish_figure)
     return dict(table=table, ticker=ticker, starting_price=starting_price,
                 mean_return=mean_annual_return, volatility=annual_volatility,
                 long_term_mean=long_term_mean, theta=theta,
                 iterations=sim.iterations, observations=len(real_returns), local=local,
-                figures_dir=figures_dir.relative_to(RESULTS_DIR).as_posix())
+                figures_dir=figures_dir.relative_to(RESULTS_DIR).as_posix(), monte_carlo=mc)
 
 
 if __name__ == "__main__":

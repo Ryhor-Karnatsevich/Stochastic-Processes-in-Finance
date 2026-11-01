@@ -26,6 +26,14 @@ volatility index**.
 
 ![Research report — page 9](results/pages/page-09.png)
 
+![Research report — page 10](results/pages/page-10.png)
+
+![Research report — page 11](results/pages/page-11.png)
+
+![Research report — page 12](results/pages/page-12.png)
+
+![Research report — page 13](results/pages/page-13.png)
+
 <!-- REPORT-PAGES:END -->
 
 ## Run the analysis

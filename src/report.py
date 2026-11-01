@@ -53,6 +53,72 @@ def statistics_table(table, ticker):
             + r"\bottomrule\end{tabular}}\end{table}")
 
 
+def monte_carlo_sections(result):
+    mc = result["monte_carlo"]
+    table = mc["table"]
+    ticker = latex_escape(result["ticker"])
+    definitions = [
+        ("mean", "Mean terminal change"), ("median", "Median terminal change"),
+        ("q05", "5th percentile change"), ("q95", "95th percentile change"),
+        ("loss_probability", "Probability of terminal decrease"),
+        ("drawdown_probability", "Probability of drawdown exceeding 20\\%"),
+        ("mean_se", "MC standard error: mean"),
+        ("loss_se", "MC standard error: decrease probability"),
+        ("drawdown_se", "MC standard error: drawdown probability"),
+        ("analytic_mean", "Analytical mean terminal change"),
+    ]
+    rows = []
+    for key, label in definitions:
+        values = [f"{value * 100:.2f}" + r"\%" for value in table.loc[key]]
+        rows.append(label + " & " + " & ".join(values) + r" \\")
+    text = r"\clearpage" + "\n" + rf"\subsection*{{{ticker}: Monte Carlo uncertainty and risk}}" + "\n"
+    text += (rf"A separate sample of {mc['iterations']:,} paths per model uses seed {mc['seed']} "
+             + rf"and a {mc['steps']}-step horizon ($T=2$ trading years). "
+             + "Parameters are held fixed. These are conditional model scenarios, "
+             + "not validated forecasts. VIX changes describe index levels, not investable returns.\n\n")
+    text += r"""For each path, terminal proportional change and worst drawdown are
+\[
+R_T^{(i)}=S_T^{(i)}/S_0-1,\qquad
+D^{(i)}=\min_t\left(S_t^{(i)}/\max_{u\leq t}S_u^{(i)}-1\right).
+\]
+The event estimates are the sample proportions of $R_T^{(i)}<0$ and
+$D^{(i)}<-0.20$. A mean has estimated MC error
+$s_R/\sqrt{M}$; an event probability has estimated error
+$\sqrt{\hat p(1-\hat p)/M}$. Errors shown as percentages are on the same
+scale as their estimates (percentage points for probabilities).
+\begin{table}[htbp]\centering
+\caption{Conditional two-year Monte Carlo outcomes.}
+\resizebox{\linewidth}{!}{\begin{tabular}{lrrr}\toprule
+Metric & RW & GBM & Log-OU \\\midrule
+""" + "\n".join(rows) + r"""
+\bottomrule\end{tabular}}\end{table}
+
+The 5th--95th percentile bands are pointwise simulation intervals, not
+simultaneous path coverage or confidence intervals for market outcomes.
+The convergence check uses nested samples of 200, 1,000, 5,000 and 10,000
+paths. Error bars are approximate $\pm1.96$ MC standard errors for the mean
+and terminal-decrease probability, not measures of model uncertainty.
+No error bars are assigned to the 5th percentile in this comparison.
+Analytical means benchmark the implemented updates, including Euler OU.
+
+The same Gaussian shocks are reused across models for comparisons;
+paths within each model remain independent. Increasing the path count
+reduces simulation error but cannot remedy model misspecification or
+parameter uncertainty. Normal error approximations can be unreliable near
+probabilities zero or one; zero sampled events do not establish impossibility.
+The additional paths do not enter the ADF tests.
+"""
+    text += "\n" + r"\clearpage" + "\n" + rf"\subsection*{{{ticker}: Monte Carlo figures}}" + "\n"
+    for name, caption in [
+        ("mc_bands", "Median levels and pointwise 5th--95th percentile bands."),
+        ("mc_convergence", "Nested-sample convergence. Dotted lines in the mean panel are analytical expectations; error bars show simulation error only."),
+    ]:
+        text += (r"\begin{figure}[!htbp]\centering" + "\n"
+                 + rf"\includegraphics[width=\linewidth,height=0.35\textheight,keepaspectratio]{{{result['figures_dir']}/{name}.png}}" + "\n"
+                 + rf"\caption{{{ticker}: {caption}}}" + "\n" + r"\end{figure}" + "\n")
+    return text
+
+
 def write_report(results):
     """One academic report; edit this template for lasting wording changes."""
     RESULTS_DIR.mkdir(exist_ok=True)
@@ -96,7 +162,7 @@ def write_report(results):
             + f"GBM simulated volatility is {table.loc['Geometric Brownian Motion', 'volatility'] * 100:.2f}"
             + r"\%, while its annualized mean log return is "
             + f"{table.loc['Geometric Brownian Motion', 'mean'] * 100:.2f}"
-            + r"\%. The drift convention discussed above explains why the mean need not match the data."
+            + r"\%. The log drift is calibrated to the sample mean; finite simulation samples still introduce Monte Carlo error."
             + "\n\n" + r"\small RW: geometric random walk; GBM: geometric Brownian motion; Log-OU: exponentiated OU process.\normalsize"
         )
         for page_title, names in [
@@ -113,6 +179,7 @@ def write_report(results):
             sections.append(r"\clearpage" + "\n"
                             + rf"\subsection*{{{latex_escape(ticker)}: {page_title}}}" + "\n"
                             + "\n".join(figures))
+        sections.append(monte_carlo_sections(result))
     source = r"""% Generated by src/report.py. Edit that template for lasting changes.
 % Basics: \section{...} creates headings; \[ ... \] displays mathematics.
 \documentclass[11pt,a4paper]{article}
@@ -137,7 +204,9 @@ def write_report(results):
 This study compares a geometric random walk, geometric Brownian motion,
 and an exponentiated Ornstein--Uhlenbeck process with observed AAPL stock
 prices and the VIX volatility index. Each asset is studied using 504 daily
-log returns and 200 simulated paths per model. The comparison considers
+log returns and 200 diagnostic paths per model, plus a separate 10,000-path
+Monte Carlo experiment for uncertainty, event probabilities and convergence.
+The comparison considers
 return moments, serial dependence, stationarity diagnostics, and drawdown.
 The exercise evaluates in-sample descriptive fit; it does not establish
 predictive performance or market efficiency.
@@ -182,15 +251,17 @@ $\sigma=\sqrt{252}\,\operatorname{std}(r)$, with population standard deviation.
 Let $Z_t$ be independent standard normal draws and $X_t=\log S_t$:
 \begin{align*}
 \text{RW:}\quad S_{t+1}&=S_t\exp(\sqrt{\Delta t}Z_t),\\
-\text{GBM:}\quad S_{t+1}&=S_t\exp\bigl[(m-\sigma^2/2)\Delta t+\sigma\sqrt{\Delta t}Z_t\bigr],\\
+\text{GBM:}\quad S_{t+1}&=S_t\exp\bigl[m\Delta t+\sigma\sqrt{\Delta t}Z_t\bigr],\\
 \text{Log-OU:}\quad X_{t+1}&=X_t+\theta(\ell-X_t)\Delta t+\sigma\sqrt{\Delta t}Z_t,
 \quad S_t=e^{X_t}.
 \end{align*}
 Here $\ell$ is the sample mean log price and $\theta$ is specified rather
 than fitted. The random walk fixes annual log volatility at one.
-The GBM code uses the observed mean log return as $m$ and then subtracts
-$\sigma^2/2$, so expected annual log return is $m-\sigma^2/2$, rather than $m$.
-This implementation detail is retained and must inform interpretation.
+The GBM simulator expects arithmetic drift $\mu$. We now supply
+$\mu=m+\sigma^2/2$, so its update has annual log drift $m$. This corrects
+the previous convention, which applied an extra variance subtraction
+to the estimated log-return drift. This is an in-sample calibration, not
+an estimate of risk-neutral drift.
 
 \begin{table}[htbp]\centering
 \caption{Model inputs. Starting levels retain their original units.}
@@ -232,8 +303,8 @@ specific specification, not as a rejection of every random-walk model.
 \textbf{H3: Distributional mismatch.} Both observed series have higher
 kurtosis than the approximately Gaussian simulated returns in this run.
 GBM reproduces its volatility input closely but does not reproduce these
-tail characteristics. Its mean comparison is additionally affected by
-the drift convention described in the methodology.
+tail characteristics. Its log drift is calibrated to the observed mean,
+with remaining sampling differences measured by Monte Carlo error.
 
 \textbf{H4: Stationarity is not model identification.} The asset-level
 ADF results give evidence concerning a unit root under the test's default
@@ -249,8 +320,10 @@ These results are descriptive, not investment or forecasting evidence.
 A stronger follow-up would preserve dated observations, align simulated
 and observed price grids, use consistent price transformations for ADF,
 compute dependence diagnostics per path, estimate mean-reversion speed,
-and evaluate corrected drift calibration on an unseen sample. These are
-proposed extensions, not changes made for this report.
+and evaluate the calibrated models on an unseen sample. These are
+proposed extensions, not changes made for this report. The new Monte Carlo
+experiment quantifies conditional outcomes and numerical precision, rather
+than testing out-of-sample predictive accuracy.
 \end{document}
 """
     for token, value in {
