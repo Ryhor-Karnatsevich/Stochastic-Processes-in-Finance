@@ -3,3 +3,14 @@
 Notes.md
 notes.py
 Empirical Study of Stochastic Processes in Financial Markets.md
+__pycache__/
+*.pyc
+results/*.aux
+results/*.log
+results/*.out
+results/*.synctex.gz
+results/*.fls
+results/*.fdb_latexmk
+
+.tools/
+tmp/
