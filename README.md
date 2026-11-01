@@ -6,17 +6,27 @@ volatility index**.
 
 **[Read the full research report (PDF)](results/report.pdf)**
 
-The report presents the research hypotheses, mathematical models,
-asset-level statistics, simulation figures, and conclusions.
+<!-- REPORT-PAGES:START -->
 
-## Main findings
+![Research report — page 1](results/pages/page-01.png)
 
-- Gaussian simulations miss the heavier tails observed in both series.
-- Matching volatility alone does not establish realistic return or risk behavior.
-- Stationarity diagnostics alone do not establish that an OU model is suitable.
+![Research report — page 2](results/pages/page-02.png)
 
-Results describe in-sample model fit. The report documents limitations,
-including the current GBM drift convention and pooled simulation diagnostics.
+![Research report — page 3](results/pages/page-03.png)
+
+![Research report — page 4](results/pages/page-04.png)
+
+![Research report — page 5](results/pages/page-05.png)
+
+![Research report — page 6](results/pages/page-06.png)
+
+![Research report — page 7](results/pages/page-07.png)
+
+![Research report — page 8](results/pages/page-08.png)
+
+![Research report — page 9](results/pages/page-09.png)
+
+<!-- REPORT-PAGES:END -->
 
 ## Run the analysis
 

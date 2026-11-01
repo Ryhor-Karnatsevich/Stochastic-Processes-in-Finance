@@ -264,6 +264,37 @@ proposed extensions, not changes made for this report.
     return destination
 
 
+def update_readme_previews(pdf):
+    """Render the compiled PDF and refresh only the README's generated block."""
+    import pymupdf
+
+    readme = RESULTS_DIR.parent / "README.md"
+    start = "<!-- REPORT-PAGES:START -->"
+    end = "<!-- REPORT-PAGES:END -->"
+    text = readme.read_text(encoding="utf-8")
+    if text.count(start) != 1 or text.count(end) != 1:
+        raise ValueError("README.md must contain one REPORT-PAGES marker pair")
+    before, rest = text.split(start, 1)
+    _, after = rest.split(end, 1)
+    pages_dir = RESULTS_DIR / "pages"
+    pages_dir.mkdir(exist_ok=True)
+    images = []
+    generated = set()
+    with pymupdf.open(pdf) as document:
+        for number, page in enumerate(document, start=1):
+            destination = pages_dir / f"page-{number:02d}.png"
+            page.get_pixmap(dpi=140, alpha=False).save(destination)
+            generated.add(destination.name)
+            relative_path = destination.relative_to(RESULTS_DIR.parent).as_posix()
+            images.append(f"![Research report — page {number}]({relative_path})")
+    for old_page in pages_dir.glob("page-[0-9][0-9].png"):
+        if old_page.name not in generated:
+            old_page.unlink()
+    readme.write_text(before + start + "\n\n" + "\n\n".join(images)
+                      + "\n\n" + end + after, encoding="utf-8")
+    print(f"README updated with {len(images)} report pages.")
+
+
 def compile_report(source=None, open_pdf=False):
     source = Path(source or RESULTS_DIR / "report.tex").resolve()
     if not source.is_file():
@@ -285,6 +316,7 @@ def compile_report(source=None, open_pdf=False):
     if not pdf.is_file():
         raise RuntimeError("Compilation completed without producing report.pdf")
     print(f"PDF report saved to: {pdf}")
+    update_readme_previews(pdf)
     if open_pdf:
         if os.name == "nt":
             os.startfile(pdf)
